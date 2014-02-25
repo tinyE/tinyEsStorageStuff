@@ -1,0 +1,26 @@
+clear
+$User="${PureUser}"
+$Pass="${PurePassword}"
+$IP="${PureIP}"
+$OutLocation="${FileLocation}"
+$SANName="${SANName}"
+$NewData=@()
+
+$Headers=plink -l $User -pw $Pass $IP purearray monitor --csv | select -First 1
+$OrigData=plink -l $User -pw $Pass $IP purearray monitor --notitle --historical 1h --csv
+#------
+
+# Add SAN name into headers as 2nd column
+$SplitHeaders=$Headers -split ","
+$NewHeaders="$($SplitHeaders[0]),SANName,$($SplitHeaders[1..($SplitHeaders.Count-1)])"
+
+# Add SAN name into data as 2nd column
+foreach ($row in $OrigData) {
+	$SplitRow=""
+	$SplitRow=$row -split ","
+	$NewData+="$($SplitRow[0]),$SANName,$($SplitRow[1..($SplitRow.Count-1)])"
+}
+
+# Output
+$NewHeaders | Out-File -Force -Encoding OEM -FilePath $OutLocation 
+$NewData | Out-File -Append -Force -Encoding OEM -FilePath $OutLocation 
